@@ -23,7 +23,7 @@ export default function DashboardPage() {
   );
   const teamIncidents = incidents?.filter(incident => 
     selectedTeamId 
-      ? incident.services.some(service => service.teamId === selectedTeamId)
+      ? (incident as any).services?.some((service : any) => service.teamId === selectedTeamId)
       : true
   );
 
