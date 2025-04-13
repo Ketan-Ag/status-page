@@ -28,7 +28,7 @@ interface Team {
   description: string | null;
 }
 
-export function TeamSwitcher() {
+const TeamSwitcher = () => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const { selectedTeamId, setSelectedTeamId } = useTeam();
