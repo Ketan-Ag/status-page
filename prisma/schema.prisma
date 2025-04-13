@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model incident {
+  id             String           @id
+  title          String
+  description    String
+  status         incident_status  @default(INVESTIGATING)
+  impact         incident_impact  @default(NONE)
+  organizationId String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime
+  organization   organization     @relation(fields: [organizationId], references: [id], map: "Incident_organizationId_fkey")
+  incidentupdate incidentupdate[]
+  service        service[]        @relation("incidenttoservice")
+
+  @@index([organizationId], map: "Incident_organizationId_fkey")
+}
+
+model incidentupdate {
+  id         String                @id
+  message    String
+  status     incidentupdate_status
+  incidentId String
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime
+  incident   incident              @relation(fields: [incidentId], references: [id], map: "IncidentUpdate_incidentId_fkey")
+
+  @@index([incidentId], map: "IncidentUpdate_incidentId_fkey")
+}
+
+model maintenance {
+  id             String             @id
+  title          String
+  description    String
+  startTime      DateTime
+  endTime        DateTime
+  status         maintenance_status @default(SCHEDULED)
+  organizationId String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime
+  organization   organization       @relation(fields: [organizationId], references: [id], map: "Maintenance_organizationId_fkey")
+  service        service[]          @relation("maintenancetoservice")
+
+  @@index([organizationId], map: "Maintenance_organizationId_fkey")
+}
+
+model organization {
+  id          String        @id
+  name        String
+  slug        String        @unique(map: "Organization_slug_key")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime
+  incident    incident[]
+  maintenance maintenance[]
+  service     service[]
+  team        team[]
+  user        user[]
+}
+
+model service {
+  id             String         @id
+  name           String
+  description    String?
+  status         service_status @default(OPERATIONAL)
+  organizationId String
+  teamId         String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  organization   organization   @relation(fields: [organizationId], references: [id], map: "Service_organizationId_fkey")
+  team           team?          @relation(fields: [teamId], references: [id], map: "Service_teamId_fkey")
+  incident       incident[]     @relation("incidenttoservice")
+  maintenance    maintenance[]  @relation("maintenancetoservice")
+
+  @@index([organizationId], map: "Service_organizationId_fkey")
+  @@index([teamId], map: "Service_teamId_fkey")
+}
+
+model team {
+  id             String       @id
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  service        service[]
+  organization   organization @relation(fields: [organizationId], references: [id], map: "Team_organizationId_fkey")
+  teammember     teammember[]
+
+  @@index([organizationId], map: "Team_organizationId_fkey")
+}
+
+model teammember {
+  id        String          @id
+  teamId    String
+  userId    String
+  role      teammember_role @default(MEMBER)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime
+  team      team            @relation(fields: [teamId], references: [id], onDelete: Cascade, map: "TeamMember_teamId_fkey")
+  user      user            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "TeamMember_userId_fkey")
+
+  @@unique([teamId, userId], map: "TeamMember_teamId_userId_key")
+  @@index([userId], map: "TeamMember_userId_fkey")
+}
+
+model user {
+  id             String       @id
+  email          String       @unique(map: "User_email_key")
+  name           String?
+  password       String
+  role           user_role    @default(MEMBER)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime
+  teammember     teammember[]
+  organization   organization @relation(fields: [organizationId], references: [id], map: "User_organizationId_fkey")
+
+  @@index([organizationId], map: "User_organizationId_fkey")
+}
+
+enum incidentupdate_status {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum incident_status {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum service_status {
+  OPERATIONAL
+  DEGRADED_PERFORMANCE
+  PARTIAL_OUTAGE
+  MAJOR_OUTAGE
+  MAINTENANCE
+}
+
+enum teammember_role {
+  ADMIN
+  MEMBER
+}
+
+enum incident_impact {
+  NONE
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+enum user_role {
+  ADMIN
+  MEMBER
+}
+
+enum maintenance_status {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
